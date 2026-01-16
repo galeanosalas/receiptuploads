@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <title>Receipt Intake</title>
+  <style>
+    /* -----------------------------------------
+   MOBILE APP‑LIKE LAYOUT
+   Activates on screens under 700px
+------------------------------------------*/
+    @media (max-width: 700px) {
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: #fafafa;
+        font-size: 16px;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+        margin-bottom: 12px;
+        text-align: center;
+      }
+
+      .screen {
+        padding: 16px;
+      }
+
+      /* Upload pill becomes a big tap target */
+      .pill-drop {
+        padding: 22px;
+        font-size: 1.1rem;
+        border-radius: 14px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .pill-drop .icon {
+        font-size: 2rem;
+      }
+
+      /* File cards become full-width stacked blocks */
+      .file-card {
+        width: 100%;
+        margin: 14px 0;
+        padding: 16px;
+        border-radius: 12px;
+        background: white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      }
+
+      .file-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+        word-break: break-all;
+      }
+
+      /* Inputs and selects become large and easy to tap */
+      input,
+      select,
+      textarea {
+        width: 100%;
+        font-size: 1rem;
+        padding: 12px;
+        margin-top: 4px;
+        margin-bottom: 14px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+
+      textarea {
+        min-height: 70px;
+      }
+
+      /* Buttons become full-width and thumb-friendly */
+      button {
+        width: 100%;
+        padding: 14px;
+        font-size: 1.05rem;
+        border-radius: 10px;
+        margin-top: 10px;
+      }
+
+      /* Row layout collapses vertically */
+      .row {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* Status messages centered and spaced */
+      .status-ok,
+      .status-error {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 1rem;
+      }
+
+      /* Back link spacing */
+      .back-link {
+        display: block;
+        margin-bottom: 16px;
+        font-size: 1rem;
+      }
+    }
+
+    :root {
+      --bg: #ffffff;
+      --fg: #111111;
+      --muted: #666666;
+      --border: #cccccc;
+      --border-soft: #e0e0e0;
+      --accent: #4a90e2;
+      --accent-soft: #f0f8ff;
+      --pill-bg: #f7f7f7;
+      --pill-border: #bbbbbb;
+      --pill-hover-bg: #eef5ff;
+      --pill-hover-border: #4a90e2;
+      --input-bg: #ffffff;
+      --input-fg: #111111;
+      --input-border: #cccccc;
+      --card-bg: #fafafa;
+      --table-border: #dddddd;
+      --status-ok: #2e7d32;
+      --status-error: #c62828;
+      --shadow-soft: 0 2px 6px rgba(0, 0, 0, 0.06);
+      --transition-fast: 0.18s ease-out;
+    }
+
+    body.dark {
+      --bg: #101015;
+      --fg: #f3f3f7;
+      --muted: #9a9ab0;
+      --border: #3a3a4a;
+      --border-soft: #2a2a38;
+      --accent: #7aa8ff;
+      --accent-soft: #1b2438;
+      --pill-bg: #181824;
+      --pill-border: #3a3a4a;
+      --pill-hover-bg: #22283a;
+      --pill-hover-border: #9bb8ff;
+      --input-bg: #181824;
+      --input-fg: #f3f3f7;
+      --input-border: #3a3a4a;
+      --card-bg: #181824;
+      --table-border: #333344;
+      --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.35);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body.auto-theme {
+        --bg: #101015;
+        --fg: #f3f3f7;
+        --muted: #9a9ab0;
+        --border: #3a3a4a;
+        --border-soft: #2a2a38;
+        --accent: #7aa8ff;
+        --accent-soft: #1b2438;
+        --pill-bg: #181824;
+        --pill-border: #3a3a4a;
+        --pill-hover-bg: #22283a;
+        --pill-hover-border: #9bb8ff;
+        --input-bg: #181824;
+        --input-fg: #f3f3f7;
+        --input-border: #3a3a4a;
+        --card-bg: #181824;
+        --table-border: #333344;
+        --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.35);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 860px;
+      margin: 40px auto;
+      padding: 0 16px 40px;
+      background: var(--bg);
+      color: var(--fg);
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+
+    h1,
+    h2 {
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .center {
+      text-align: center;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--pill-bg);
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+      text-decoration: none;
+      color: var(--fg);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .btn:hover {
+      background: var(--pill-hover-bg);
+      border-color: var(--pill-hover-border);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 500;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--input-fg);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: border-color var(--transition-fast), background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.25);
+    }
+
+    textarea {
+      resize: vertical;
+    }
+
+    .small {
+      font-size: 0.85em;
+      color: var(--muted);
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .row>div {
+      flex: 1;
+    }
+
+    .file-card {
+      border: 1px solid var(--border-soft);
+      padding: 15px;
+      margin-top: 16px;
+      border-radius: 10px;
+      background: var(--card-bg);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .file-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: var(--shadow-soft);
+    }
+
+    th,
+    td {
+      border: 1px solid var(--table-border);
+      padding: 6px;
+      text-align: left;
+      background: var(--bg);
+    }
+
+    th {
+      background: var(--pill-bg);
+      font-weight: 500;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--pill-bg);
+      color: var(--fg);
+      transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+      box-shadow: var(--shadow-soft);
+    }
+
+    button:hover {
+      background: var(--pill-hover-bg);
+      border-color: var(--pill-hover-border);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    #statusDed,
+    #statusNon,
+    #statusIncome {
+      margin-top: 20px;
+      font-weight: 500;
+    }
+
+    .status-ok {
+      color: var(--status-ok);
+    }
+
+    .status-error {
+      color: var(--status-error);
+    }
+
+    .back-link {
+      margin-top: 10px;
+      display: inline-block;
+      font-size: 0.9em;
+      cursor: pointer;
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    .pill-drop {
+      margin-top: 16px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px dashed var(--pill-border);
+      background: var(--pill-bg);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .pill-drop span.icon {
+      font-size: 1.1em;
+    }
+
+    .pill-drop.dragover {
+      background: var(--pill-hover-bg);
+      border-color: var(--pill-hover-border);
+      color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--pill-bg);
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 4px 6px;
+      box-shadow: var(--shadow-soft);
+      transition: background var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--pill-hover-border);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      transform: translateY(-1px);
+    }
+
+    .theme-toggle button {
+      margin: 0;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      box-shadow: none;
+      font-size: 0.85em;
+      color: var(--muted);
+    }
+
+    .theme-toggle button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .theme-toggle button:hover {
+      background: var(--pill-hover-bg);
+      border: none;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .screen {
+      margin-top: 40px;
+    }
+
+    .screen h2 {
+      margin-top: 0;
+    }
+
+    .file-loaded-name {
+      margin-top: 6px;
+      font-size: 0.85em;
+      color: var(--muted);
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body class="auto-theme">
+
+  <!-- THEME TOGGLE -->
+  <div class="theme-toggle" id="themeToggle">
+    <button type="button" data-mode="light">☀️</button>
+    <button type="button" data-mode="dark">🌙</button>
+    <button type="button" data-mode="auto" class="active">A</button>
+  </div>
+
+  <!-- SCREEN 1: LANDING -->
+  <div id="screenLanding" class="screen">
+    <h1 class="center">Receipt Intake</h1>
+    <div class="center">
+      <button class="btn" onclick="showScreen('deductible')">Deductible Uploads (Batch / Legacy)</button>
+
+      <button class="btn" onclick="showScreen('nonDeductible')">Non‑Deductible Uploads (Structured)</button>
+      <button class="btn" onclick="showScreen('income')">Income Uploads</button>
+    </div>
+    <div class="small center" style="margin-top: 30px;">
+      Choose the type of entry you want to upload.<br>
+      Deductible uses the legacy batch uploader.<br>
+      Non‑deductible uses the new structured form.
+    </div>
+  </div>
+
+  <!-- SCREEN 2: DEDUCTIBLE (LEGACY BATCH) -->
+  <div id="screenDeductible" class="screen hidden">
+    <h2>Deductible Batch Receipt Upload</h2>
+    <a class="back-link" onclick="goHome()">← Back to Menu</a>
+    <div class="row"> </div>
+    <div id="pillDropDed" class="pill-drop">
+      <div class="file-loaded-name" id="fileNameDed"></div>
+      <span class="icon">📄</span>
+      <span>Drag & Drop or Click to select receipts</span>
+    </div>
+    <input type="file" id="fileInputDed" accept=".pdf,image/*" multiple style="display:none;">
+
+    <label>Business Type</label>
+    <select id="businessTypeDed">
+      <option value="Galeano" selected>Galeano</option>
+      <option value="Monica">Monica</option>
+    </select>
+
+    <label>Category (applies to all)</label>
+    <select id="categoryDed"></select>
+
+    <label>Gig (applies to all)</label>
+    <select id="gigDed"></select>
+
+    <button id="prepareBtnDed">Prepare Uploads</button>
+
+    <div id="fileCardsDed"></div>
+
+    <button id="uploadAllBtnDed" style="display:none;">Upload All</button>
+
+    <div id="statusDed"></div>
+  </div>
+
+  <!-- SCREEN 3: NON-DEDUCTIBLE (STRUCTURED) -->
+  <div id="screenNonDeductible" class="screen hidden">
+    <h2>Non‑Deductible Receipt (Structured)</h2>
+    <a class="back-link" onclick="goHome()">← Back to Menu</a>
+
+    <div class="small">
+      Type is fixed as non‑deductible. Receipt is optional. Filename like
+      <code>2026-01-08 Vendor, 42.50 EUR.jpg</code> will auto‑fill fields.
+    </div>
+
+    <div id="pillDropNon" class="pill-drop">
+      <div class="file-loaded-name" id="fileNameNon"></div>
+      <span class="icon">📄</span>
+      <span>Drag & Drop or Click to add a receipt (optional)</span>
+    </div>
+    <input type="file" id="fileInputNon" accept=".pdf,image/*" style="display:none;">
+
+    <label>Date</label>
+    <input type="date" id="dateNon">
+
+    <label>Vendor</label>
+    <input type="text" id="vendorNon" placeholder="e.g. Netto">
+
+    <div class="row">
+      <div>
+        <label>Currency</label>
+        <input type="text" id="currencyNon" placeholder="e.g. EUR">
+      </div>
+      <div>
+        <label>Total Amount</label>
+        <input type="number" step="0.01" id="totalNon" placeholder="e.g. 42.50">
+      </div>
+    </div>
+
+    <label>Description</label>
+    <textarea id="descriptionNon" rows="2" placeholder="Optional description"></textarea>
+
+    <label>Splits</label>
+    <table>
+      <thead>
+        <tr>
+          <th>Amount</th>
+          <th>Category</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="splitsBodyNon"></tbody>
+    </table>
+    <button type="button" id="addSplitBtnNon">+ Add Split</button>
+    <div class="small" id="splitHintNon"></div>
+
+    <button id="submitBtnNon">Submit Non‑Deductible Entry</button>
+
+    <div id="statusNon"></div>
+  </div>
+
+  <!-- SCREEN 4: INCOME -->
+  <div id="screenIncome" class="screen hidden">
+    <h2>Income Upload</h2>
+    <a class="back-link" onclick="goHome()">← Back to Menu</a>
+
+    <div class="small">
+      Receipt/invoice is optional.<br>
+      Net Amount overrides Gross Amount when present (for EUR total), but Gross is still required.
+    </div>
+
+    <div id="pillDropIncome" class="pill-drop">
+      <div class="file-loaded-name" id="fileNameIncome"></div>
+      <span class="icon">📄</span>
+      <span>Drag & Drop or Click to add invoice (optional)</span>
+    </div>
+
+
+    <div class="row">
+      <div>
+        <label>Date</label>
+        <input type="date" id="incomeDate">
+      </div>
+      <div>
+        <label>Business Type</label>
+        <select id="incomeBusinessType"></select>
+      </div>
+    </div>
+
+    <label>Payer / Contractor</label>
+    <input type="text" id="incomeContractor" placeholder="e.g. Royal Danish Opera">
+
+    <div class="row">
+      <div>
+        <label>Currency</label>
+        <input type="text" id="incomeCurrency" placeholder="e.g. EUR">
+      </div>
+      <div>
+        <label>Gross Amount</label>
+        <input type="number" step="0.01" id="incomeGross" placeholder="e.g. 1500">
+      </div>
+    </div>
+
+    <label>Net Amount (optional)</label>
+    <input type="number" step="0.01" id="incomeNet" placeholder="If withheld, enter net amount">
+
+    <label>Income Category</label>
+    <select id="incomeCategory"></select>
+
+    <label>Gig</label>
+    <select id="incomeGig"></select>
+
+    <label>Description</label>
+    <textarea id="incomeDescription" rows="2" placeholder="Optional description"></textarea>
+
+    <input type="file" id="fileInputIncome" accept=".pdf,image/*" style="display:none;">
+
+    <button id="submitBtnIncome">Submit Income Entry</button>
+
+    <div id="statusIncome"></div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbyZdrh4RXgEt9mz3R68APwa1mhUwxxNiormSQcLw1hG3pA7wtTRGZOmVnzGu2UGhoWmzw/exec";
+
+    function goHome() {
+      window.location.replace(window.location.href.split('#')[0]);
+    }
+
+    // ---------- THEME MANAGEMENT ----------
+    const THEME_KEY = "intake_theme_mode"; // "light" | "dark" | "auto"
+
+    function applyTheme(mode) {
+      const body = document.body;
+      body.classList.remove("dark", "auto-theme");
+      if (mode === "light") {
+        // default light
+      } else if (mode === "dark") {
+        body.classList.add("dark");
+      } else {
+        body.classList.add("auto-theme");
+      }
+
+      const buttons = document.querySelectorAll("#themeToggle button");
+      buttons.forEach(btn => btn.classList.remove("active"));
+      const activeBtn = document.querySelector(`#themeToggle button[data-mode="${mode}"]`);
+      if (activeBtn) activeBtn.classList.add("active");
+    }
+
+    function initTheme() {
+      let mode = localStorage.getItem(THEME_KEY) || "auto";
+      applyTheme(mode);
+
+      document.getElementById("themeToggle").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-mode]");
+        if (!btn) return;
+        const mode = btn.getAttribute("data-mode");
+        localStorage.setItem(THEME_KEY, mode);
+        applyTheme(mode);
+      });
+    }
+
+    // ---------- SCREEN SWITCHING ----------
+    function showScreen(which) {
+      document.getElementById("screenLanding").classList.add("hidden");
+      document.getElementById("screenDeductible").classList.add("hidden");
+      document.getElementById("screenNonDeductible").classList.add("hidden");
+      document.getElementById("screenIncome").classList.add("hidden");
+
+      if (which === "landing") {
+        document.getElementById("screenLanding").classList.remove("hidden");
+      } else if (which === "deductible") {
+        loadLists();   // ⭐ refresh dropdowns
+        document.getElementById("screenDeductible").classList.remove("hidden");
+      } else if (which === "nonDeductible") {
+        loadLists();   // ⭐ refresh dropdowns
+        document.getElementById("screenNonDeductible").classList.remove("hidden");
+      } else if (which === "income") {
+        loadLists();   // ⭐ refresh dropdowns
+        document.getElementById("screenIncome").classList.remove("hidden");
+      }
+    }
+
+    // ---------- SHARED: LOAD LISTS ----------
+    let deductibleCategories = [];
+    let nonDeductibleCategories = [];
+    let incomeCategories = [];
+    let gigs = [];
+
+    async function loadLists() {
+      try {
+        const res = await fetch(API_URL + "?action=getLists");
+        const data = await res.json();
+
+        deductibleCategories = data.deductibleCategories || [];
+        nonDeductibleCategories = data.nonDeductibleCategories || [];
+        incomeCategories = data.incomeCategories || [];
+        gigs = data.gigs || [];
+
+        // Deductible dropdowns
+        const catSelectDed = document.getElementById("categoryDed");
+        const gigSelectDed = document.getElementById("gigDed");
+        catSelectDed.innerHTML = "";
+        gigSelectDed.innerHTML = "";
+
+        deductibleCategories.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c;
+          opt.textContent = c;
+          catSelectDed.appendChild(opt);
+        });
+
+        gigs.forEach(g => {
+          const opt = document.createElement("option");
+
+          if (!g.name || g.name === "None") {
+            opt.value = "None";
+            opt.textContent = "None";
+          } else {
+            const label = `${g.city} — ${g.name} (${g.start.slice(0, 10)} - ${g.end.slice(0, 10)})`;
+            opt.value = g.id;     // or g.id later if you add IDs
+            opt.textContent = label;
+          }
+
+          gigSelectDed.appendChild(opt);
+        });
+
+        // Non-deductible split hint + ensure at least one row
+        updateSplitHintNon();
+        if (document.getElementById("splitsBodyNon").children.length === 0) {
+          addSplitRowNon();
+        }
+
+        // Income dropdowns
+        const incomeCatSelect = document.getElementById("incomeCategory");
+        if (incomeCatSelect) {
+          incomeCatSelect.innerHTML = "";
+          incomeCategories.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            incomeCatSelect.appendChild(opt);
+          });
+        }
+
+        const businessTypeSelect = document.getElementById("incomeBusinessType");
+        if (businessTypeSelect) {
+          businessTypeSelect.innerHTML = "";
+          ["Galeano", "Monica"].forEach(name => {
+            const opt = document.createElement("option");
+            opt.value = name;
+            opt.textContent = name;
+            businessTypeSelect.appendChild(opt);
+          });
+        }
+
+        const incomeGigSelect = document.getElementById("incomeGig");
+        if (incomeGigSelect) {
+          incomeGigSelect.innerHTML = "";
+
+          gigs.forEach(g => {
+            const opt = document.createElement("option");
+
+            if (!g.name || g.name === "None") {
+              opt.value = "None";
+              opt.textContent = "None";
+            } else {
+              const label = `${g.city} — ${g.name} (${g.start.slice(0, 10)} - ${g.end.slice(0, 10)})`;
+              opt.value = g.id;
+              opt.textContent = label;
+            }
+
+            incomeGigSelect.appendChild(opt);   // ✅ CORRECT TARGET
+          });
+        }
+
+      } catch (err) {
+        console.error("Error loading lists:", err);
+      }
+    }
+
+    // ---------- DEDUCTIBLE (LEGACY) LOGIC ----------
+    let selectedFilesDed = [];
+
+    function handleFilesDed(files) {
+      selectedFilesDed = Array.from(files);
+      generateCardsDed();
+    }
+
+    function generateCardsDed() {
+      const container = document.getElementById("fileCardsDed");
+      container.innerHTML = "";
+
+      if (!selectedFilesDed.length) {
+        alert("Please select files first.");
+        return;
+      }
+
+      selectedFilesDed.forEach((file, index) => {
+        const card = document.createElement("div");
+        card.className = "file-card";
+
+        // Title
+        const title = document.createElement("div");
+        title.className = "file-title";
+        title.textContent = file.name;
+        card.appendChild(title);
+
+        // Date
+        const dateLabel = document.createElement("label");
+        dateLabel.textContent = "Date";
+        card.appendChild(dateLabel);
+
+        const dateInput = document.createElement("input");
+        dateInput.type = "date";
+        dateInput.id = `dateDed_${index}`;
+        card.appendChild(dateInput);
+
+        // Vendor
+        const vendorLabel = document.createElement("label");
+        vendorLabel.textContent = "Vendor";
+        card.appendChild(vendorLabel);
+
+        const vendorInput = document.createElement("input");
+        vendorInput.type = "text";
+        vendorInput.placeholder = "e.g. Netto";
+        vendorInput.id = `vendorDed_${index}`;
+        card.appendChild(vendorInput);
+
+        // Row container
+        const row = document.createElement("div");
+        row.className = "row";
+
+        // Currency
+        const currencyDiv = document.createElement("div");
+        const currencyLabel = document.createElement("label");
+        currencyLabel.textContent = "Currency";
+        const currencyInput = document.createElement("input");
+        currencyInput.type = "text";
+        currencyInput.placeholder = "e.g. EUR";
+        currencyInput.id = `currencyDed_${index}`;
+        currencyDiv.appendChild(currencyLabel);
+        currencyDiv.appendChild(currencyInput);
+
+        // Total
+        const totalDiv = document.createElement("div");
+        const totalLabel = document.createElement("label");
+        totalLabel.textContent = "Total Amount";
+        const totalInput = document.createElement("input");
+        totalInput.type = "number";
+        totalInput.step = "0.01";
+        totalInput.placeholder = "e.g. 42.50";
+        totalInput.id = `totalDed_${index}`;
+        totalDiv.appendChild(totalLabel);
+        totalDiv.appendChild(totalInput);
+
+        row.appendChild(currencyDiv);
+        row.appendChild(totalDiv);
+        card.appendChild(row);
+
+        // Description
+        const descLabel = document.createElement("label");
+        descLabel.textContent = "Description";
+        card.appendChild(descLabel);
+
+        const descArea = document.createElement("textarea");
+        descArea.rows = 2;
+        descArea.id = `descDed_${index}`;
+        card.appendChild(descArea);
+
+        // Upload button
+        const uploadBtn = document.createElement("button");
+        uploadBtn.className = "uploadSingleBtnDed";
+        uploadBtn.dataset.index = index;
+        uploadBtn.textContent = "Upload This File";
+        card.appendChild(uploadBtn);
+
+        // Status
+        const status = document.createElement("div");
+        status.id = `statusDed_${index}`;
+        status.style.marginTop = "10px";
+        card.appendChild(status);
+
+        container.appendChild(card);
+
+        // Autofill from filename
+        const parsed = parseFilenameClient(file.name);
+        if (parsed) {
+          if (!dateInput.value) {
+            dateInput.value = parsed.date;
+            dateInput.valueAsDate = new Date(parsed.date + "T12:00:00");
+          }
+          if (!vendorInput.value) vendorInput.value = parsed.vendor;
+          if (!currencyInput.value) currencyInput.value = parsed.currency;
+          if (!totalInput.value) totalInput.value = parsed.amount.toFixed(2);
+        }
+      });
+
+      document.getElementById("uploadAllBtnDed").style.display = "inline-block";
+    }
+
+    function populateGigDedDropdown(gigs) {
+      const select = document.getElementById("gigDed");
+      select.innerHTML = "";
+      gigs.forEach(g => {
+        const opt = document.createElement("option");
+        opt.value = g.id;
+        opt.textContent = g.name;
+        select.appendChild(opt);
+      });
+    }
+
+    async function uploadSingleDed(index) {
+      const file = selectedFilesDed[index];
+
+      const date = document.getElementById("dateDed_" + index).value;
+      const vendor = document.getElementById("vendorDed_" + index).value.trim();
+      const currency = document.getElementById("currencyDed_" + index).value.trim();
+      const totalStr = document.getElementById("totalDed_" + index).value;
+      const description = document.getElementById("descDed_" + index).value || "";
+      const category = document.getElementById("categoryDed").value;
+      const gig = document.getElementById("gigDed").value;
+
+      const total = parseFloat(totalStr);
+
+      if (!date || !currency || isNaN(total)) {
+        const statusEl = document.getElementById("statusDed_" + index);
+        statusEl.textContent = "Please fill at least date, currency, and total.";
+        statusEl.className = "status-error";
+        return;
+      }
+
+      const base64 = await fileToBase64(file);
+
+      const payload = {
+        who: document.getElementById("businessTypeDed").value,
+        type: "deductible",
+        category,
+        gig,
+        date,
+        vendor,
+        currency,
+        total: total.toString(),
+        description,
+        fileName: file.name,
+        fileMimeType: file.type || "application/pdf",
+        fileData: base64.split(",")[1]
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        const statusEl = document.getElementById("statusDed_" + index);
+        statusEl.textContent = result.message;
+        statusEl.className = result.status === "ok" ? "status-ok" : "status-error";
+
+      } catch (err) {
+        console.error("Upload error:", err);
+        const statusEl = document.getElementById("statusDed_" + index);
+        statusEl.textContent = "Upload failed.";
+        statusEl.className = "status-error";
+      }
+    }
+
+    async function uploadAllDed() {
+      for (let i = 0; i < selectedFilesDed.length; i++) {
+        await uploadSingleDed(i);
+      }
+      const status = document.getElementById("statusDed");
+      status.textContent = "All files uploaded!";
+      status.className = "status-ok";
+    }
+
+    // ---------- DRAG & DROP: INCOME ----------
+    let currentFileIncome = null;
+
+    const pillDropIncome = document.getElementById("pillDropIncome");
+    const fileInputIncome = document.getElementById("fileInputIncome");
+
+    pillDropIncome?.addEventListener("click", () => fileInputIncome.click());
+    pillDropIncome?.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      pillDropIncome.classList.add("dragover");
+    });
+    pillDropIncome?.addEventListener("dragleave", () => {
+      pillDropIncome.classList.remove("dragover");
+    });
+    pillDropIncome?.addEventListener("drop", (e) => {
+      e.preventDefault();
+      pillDropIncome.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        currentFileIncome = file;
+        document.getElementById("fileNameIncome").textContent = file.name;
+      }
+    });
+    fileInputIncome?.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        currentFileIncome = file;
+        document.getElementById("fileNameIncome").textContent = file.name;
+      }
+    });
+
+    // ---------- DRAG & DROP: DEDUCTIBLE ----------
+    const pillDropDed = document.getElementById("pillDropDed");
+    const fileInputDed = document.getElementById("fileInputDed");
+
+    pillDropDed.addEventListener("click", () => fileInputDed.click());
+    pillDropDed.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      pillDropDed.classList.add("dragover");
+    });
+    pillDropDed.addEventListener("dragleave", () => {
+      pillDropDed.classList.remove("dragover");
+    });
+    pillDropDed.addEventListener("drop", (e) => {
+      e.preventDefault();
+      pillDropDed.classList.remove("dragover");
+      handleFilesDed(e.dataTransfer.files);
+      if (e.dataTransfer.files[0]) {
+        document.getElementById("fileNameDed").textContent = e.dataTransfer.files[0].name;
+      }
+    });
+    fileInputDed.addEventListener("change", (e) => {
+      handleFilesDed(e.target.files);
+      if (e.target.files[0]) {
+        document.getElementById("fileNameDed").textContent = e.target.files[0].name;
+      }
+    });
+
+    document.getElementById("prepareBtnDed").addEventListener("click", generateCardsDed);
+    document.getElementById("uploadAllBtnDed").addEventListener("click", uploadAllDed);
+
+    document.addEventListener("click", function (e) {
+      if (e.target.classList.contains("uploadSingleBtnDed")) {
+        const index = Number(e.target.getAttribute("data-index"));
+        uploadSingleDed(index);
+      }
+    });
+
+    // ---------- NON-DEDUCTIBLE (STRUCTURED) LOGIC ----------
+    let currentFileNon = null;
+
+    function updateSplitHintNon() {
+      const hint = document.getElementById("splitHintNon");
+      if (!nonDeductibleCategories.length) {
+        hint.textContent = "No non‑deductible categories found in sheet.";
+      } else {
+        hint.textContent = "Categories from sheet: " + nonDeductibleCategories.join(", ");
+      }
+    }
+
+    function addSplitRowNon(amount = "", category = "") {
+      const tbody = document.getElementById("splitsBodyNon");
+      const row = document.createElement("tr");
+
+      const amountTd = document.createElement("td");
+      const amountInput = document.createElement("input");
+      amountInput.type = "number";
+      amountInput.step = "0.01";
+      amountInput.value = amount;
+      amountTd.appendChild(amountInput);
+
+      const catTd = document.createElement("td");
+      const catSelect = document.createElement("select");
+      const emptyOpt = document.createElement("option");
+      emptyOpt.value = "";
+      emptyOpt.textContent = "";
+      catSelect.appendChild(emptyOpt);
+      nonDeductibleCategories.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c;
+        opt.textContent = c;
+        catSelect.appendChild(opt);
+      });
+      catSelect.value = category || "";
+      catTd.appendChild(catSelect);
+
+      const removeTd = document.createElement("td");
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "✕";
+      removeBtn.onclick = () => {
+        row.remove();
+      };
+      removeTd.appendChild(removeBtn);
+
+      row.appendChild(amountTd);
+      row.appendChild(catTd);
+      row.appendChild(removeTd);
+
+      tbody.appendChild(row);
+    }
+
+    document.getElementById("addSplitBtnNon").addEventListener("click", () => {
+      addSplitRowNon();
+    });
+
+    // File → base64 (shared)
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Client-side filename parsing for non-deductible
+    function parseFilenameClient(fileName) {
+      let base = fileName;
+      const dot = base.lastIndexOf('.');
+      if (dot > 0) base = base.substring(0, dot);
+
+      const regex = /^(\d{4}-\d{2}-\d{2})\s+([^,]+),\s*([\d.,]+)\s+([A-Z]{3})(?![A-Z0-9])/;
+      const match = base.match(regex);
+      if (!match) return null;
+
+      const dateStr = match[1];
+      const vendor = match[2].trim();
+      const amountStr = match[3].replace(',', '.');
+      const currency = match[4];
+
+      const amount = parseFloat(amountStr);
+      if (isNaN(amount)) return null;
+
+      return {
+        date: dateStr,
+        vendor,
+        amount,
+        currency
+      };
+    }
+
+    // Drag & drop for non-deductible
+    const pillDropNon = document.getElementById("pillDropNon");
+    const fileInputNon = document.getElementById("fileInputNon");
+
+    pillDropNon.addEventListener("click", () => fileInputNon.click());
+    pillDropNon.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      pillDropNon.classList.add("dragover");
+    });
+    pillDropNon.addEventListener("dragleave", () => {
+      pillDropNon.classList.remove("dragover");
+    });
+    pillDropNon.addEventListener("drop", (e) => {
+      e.preventDefault();
+      pillDropNon.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        handleNonFileSelected(file);
+        document.getElementById("fileNameNon").textContent = file.name;
+      }
+    });
+    fileInputNon.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleNonFileSelected(file);
+        document.getElementById("fileNameNon").textContent = file.name;
+      }
+    });
+
+    function handleNonFileSelected(file) {
+      currentFileNon = file;
+
+      const parsed = parseFilenameClient(file.name);
+      if (parsed) {
+        if (!document.getElementById("dateNon").value) {
+          document.getElementById("dateNon").value = parsed.date;
+        }
+        if (!document.getElementById("vendorNon").value) {
+          document.getElementById("vendorNon").value = parsed.vendor;
+        }
+        if (!document.getElementById("currencyNon").value) {
+          document.getElementById("currencyNon").value = parsed.currency;
+        }
+        if (!document.getElementById("totalNon").value) {
+          document.getElementById("totalNon").value = parsed.amount.toFixed(2);
+        }
+
+        const tbody = document.getElementById("splitsBodyNon");
+        tbody.innerHTML = "";
+        addSplitRowNon(parsed.amount.toFixed(2), "");
+      }
+    }
+
+    document.getElementById("submitBtnNon").addEventListener("click", async () => {
+      const statusEl = document.getElementById("statusNon");
+      statusEl.textContent = "";
+      statusEl.className = "";
+
+      const date = document.getElementById("dateNon").value.trim();
+      const vendor = document.getElementById("vendorNon").value.trim();
+      const currency = document.getElementById("currencyNon").value.trim();
+      const totalStr = document.getElementById("totalNon").value.trim();
+      const description = document.getElementById("descriptionNon").value || "";
+
+      const total = parseFloat(totalStr);
+
+      if (!date) {
+        return showError("Date is required.");
+      }
+      if (!vendor) {
+        return showError("Vendor is required.");
+      }
+      if (!currency) {
+        return showError("Currency is required.");
+      }
+      if (!totalStr || isNaN(total)) {
+        return showError("Total amount is required and must be a valid number.");
+      }
+
+      const tbody = document.getElementById("splitsBodyNon");
+      const rows = Array.from(tbody.children);
+
+      if (rows.length === 0) {
+        return showError("At least one split is required.");
+      }
+
+      const splits = [];
+      for (const tr of rows) {
+        const amountInput = tr.querySelector("td:nth-child(1) input");
+        const catSelect = tr.querySelector("td:nth-child(2) select");
+
+        const amt = parseFloat(amountInput.value);
+        const cat = catSelect.value.trim();
+
+        if (!amountInput.value || isNaN(amt)) {
+          return showError("Each split must have a valid amount.");
+        }
+        if (!cat) {
+          return showError("Each split must have a category.");
+        }
+
+        splits.push({ amount: amt, category: cat });
+      }
+
+      const sumSplits = splits.reduce((s, x) => s + x.amount, 0);
+      if (Math.abs(sumSplits - total) > 0.01) {
+        return showError(
+          `Sum of splits (${sumSplits.toFixed(2)}) does not match total (${total.toFixed(2)}).`
+        );
+      }
+
+      let fileName = "";
+      let fileMimeType = "";
+      let fileData = "";
+
+      if (currentFileNon) {
+        fileName = currentFileNon.name;
+        fileMimeType = currentFileNon.type || "application/octet-stream";
+        const base64 = await fileToBase64(currentFileNon);
+        fileData = base64.split(",")[1];
+      }
+
+      const payload = {
+        type: "nonDeductible",
+        total: total.toString(),
+        currency,
+        date,
+        vendor,
+        description,
+        splits,
+        fileName,
+        fileMimeType,
+        fileData
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+
+        statusEl.textContent = result.message || "Done.";
+        statusEl.className = result.status === "ok" ? "status-ok" : "status-error";
+
+      } catch (err) {
+        console.error("Upload error:", err);
+        showError("Upload failed.");
+      }
+
+      function showError(msg) {
+        statusEl.textContent = msg;
+        statusEl.className = "status-error";
+        return;
+      }
+    });
+
+    // ---------- INCOME LOGIC ----------
+    document.getElementById("submitBtnIncome").addEventListener("click", async () => {
+      const statusEl = document.getElementById("statusIncome");
+      statusEl.textContent = "";
+      statusEl.className = "";
+
+      const businessType = document.getElementById("incomeBusinessType").value.trim();
+      const date = document.getElementById("incomeDate").value.trim();
+      const contractor = document.getElementById("incomeContractor").value.trim();
+      const currency = document.getElementById("incomeCurrency").value.trim();
+      const grossStr = document.getElementById("incomeGross").value.trim();
+      const netStr = document.getElementById("incomeNet").value.trim();
+      const category = document.getElementById("incomeCategory").value.trim();
+      const gig = document.getElementById("incomeGig").value.trim();
+      const description = document.getElementById("incomeDescription").value || "";
+
+      if (!businessType) return showError("Business Type is required.");
+      if (!date) return showError("Date is required.");
+      if (!contractor) return showError("Payer/Contractor is required.");
+      if (!currency) return showError("Currency is required.");
+      if (!category) return showError("Income Category is required.");
+
+      if (!grossStr) {
+        return showError("Gross Amount is required.");
+      }
+
+      const gross = parseFloat(grossStr);
+      if (isNaN(gross)) {
+        return showError("Gross Amount must be a valid number.");
+      }
+
+      let net = null;
+      if (netStr) {
+        net = parseFloat(netStr);
+        if (isNaN(net)) {
+          return showError("Net Amount must be a valid number.");
+        }
+      }
+
+      const baseAmount = net !== null ? net : gross;
+
+      let fileName = "";
+      let fileMimeType = "";
+      let fileData = "";
+
+      if (currentFileIncome) {
+        fileName = currentFileIncome.name;
+        fileMimeType = currentFileIncome.type || "application/octet-stream";
+        const base64 = await fileToBase64(currentFileIncome);
+        fileData = base64.split(",")[1];
+      }
+
+      const payload = {
+        type: "income",
+        businessType,
+        date,
+        contractor,
+        currency,
+        grossAmount: grossStr,
+        netAmount: netStr || "",
+        category,
+        gig,
+        description,
+        fileName,
+        fileMimeType,
+        fileData
+      };
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+        statusEl.textContent = result.message || "Done.";
+        statusEl.className = result.status === "ok" ? "status-ok" : "status-error";
+
+      } catch (err) {
+        console.error("Upload error:", err);
+        showError("Upload failed.");
+      }
+
+      function showError(msg) {
+        statusEl.textContent = msg;
+        statusEl.className = "status-error";
+      }
+    });
+
+    // ---------- INIT ----------
+    initTheme();
+    loadLists();
+    showScreen("landing");
+  </script>
+</body>
+
+</html>
