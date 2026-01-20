@@ -1256,7 +1256,7 @@
     }
 
     // ⭐ SAFE AUTO-UPPERCASE LISTENER
-    ["currencyNon", "currencyDed", "incomeCurrency"].forEach(id => {
+    ["currencyNon", "currencyDed_", "incomeCurrency"].forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;   // ← prevents fatal crash on index page
       el.addEventListener("input", function () {
