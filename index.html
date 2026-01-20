@@ -447,6 +447,28 @@
       color: var(--muted);
       font-style: italic;
     }
+
+    .date-container {
+      display: flex;
+      align-items: baseline;
+      /* ← aligns the text baselines, not the boxes */
+      gap: 6px;
+    }
+
+    .calendar-btn {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      padding: 4px 6px;
+      /* ← slightly tighter so it doesn't drag downward */
+      border-radius: 6px;
+      cursor: pointer;
+      line-height: 1;
+      /* ← prevents vertical stretching */
+      font-size: 16px;
+      /* ← matches most input text sizes */
+      margin-top: -1px;
+      /* ← micro‑nudge to perfect alignment */
+    }
   </style>
 </head>
 
@@ -463,15 +485,14 @@
   <div id="screenLanding" class="screen">
     <h1 class="center">Receipt Intake</h1>
     <div class="center">
-      <button class="btn" onclick="showScreen('deductible')">Deductible Uploads (Batch / Legacy)</button>
+      <button class="btn" onclick="showScreen('deductible')">Deductible Uploads</button>
 
-      <button class="btn" onclick="showScreen('nonDeductible')">Non‑Deductible Uploads (Structured)</button>
+      <button class="btn" onclick="showScreen('nonDeductible')">Non‑Deductible Uploads</button>
       <button class="btn" onclick="showScreen('income')">Income Uploads</button>
     </div>
+
     <div class="small center" style="margin-top: 30px;">
       Choose the type of entry you want to upload.<br>
-      Deductible uses the legacy batch uploader.<br>
-      Non‑deductible uses the new structured form.
     </div>
   </div>
 
@@ -499,8 +520,6 @@
     <label>Gig (applies to all)</label>
     <select id="gigDed"></select>
 
-    <button id="prepareBtnDed">Prepare Uploads</button>
-
     <div id="fileCardsDed"></div>
 
     <button id="uploadAllBtnDed" style="display:none;">Upload All</button>
@@ -510,7 +529,7 @@
 
   <!-- SCREEN 3: NON-DEDUCTIBLE (STRUCTURED) -->
   <div id="screenNonDeductible" class="screen hidden">
-    <h2>Non‑Deductible Receipt (Structured)</h2>
+    <h2>Non‑Deductible Receipt</h2>
     <a class="back-link" onclick="goHome()">← Back to Menu</a>
 
     <div class="small">
@@ -526,7 +545,10 @@
     <input type="file" id="fileInputNon" accept=".pdf,image/*" style="display:none;">
 
     <label>Date</label>
-    <input type="date" id="dateNon">
+    <div class="date-container">
+      <input type="date" id="dateNon">
+      <button type="button" class="calendar-btn" id="calendarBtnNon">📅</button>
+    </div>
 
     <label>Vendor</label>
     <input type="text" id="vendorNon" placeholder="e.g. Netto">
@@ -580,14 +602,17 @@
       <span>Drag & Drop or Click to add invoice (optional)</span>
     </div>
 
-
     <div class="row">
-      <div>
-        <label>Date</label>
-        <input type="date" id="incomeDate">
+      <div class="field-group">
+        <label for="incomeDate">Date</label>
+        <div class="date-container">
+          <input type="date" id="incomeDate">
+          <button type="button" class="calendar-btn" id="calendarBtnIncome">📅</button>
+        </div>
       </div>
-      <div>
-        <label>Business Type</label>
+
+      <div class="field-group">
+        <label for="incomeBusinessType">Business Type</label>
         <select id="incomeBusinessType"></select>
       </div>
     </div>
@@ -626,7 +651,8 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbyZdrh4RXgEt9mz3R68APwa1mhUwxxNiormSQcLw1hG3pA7wtTRGZOmVnzGu2UGhoWmzw/exec";
+
+    const API_URL = "https://script.google.com/macros/s/AKfycbxD-p9qZ4U2Gb2KS25dQht5bcoqqUW-X8Rpk09f4IghLEw29iBxKHP4sQuWHQyUjUdURA/exec";
 
     function goHome() {
       window.location.replace(window.location.href.split('#')[0]);
@@ -816,10 +842,27 @@
         dateLabel.textContent = "Date";
         card.appendChild(dateLabel);
 
+        // Wrapper for date + calendar button
+        const dateWrapper = document.createElement("div");
+        dateWrapper.className = "date-container"; // same class used in other flows
+
+        //Date input
         const dateInput = document.createElement("input");
         dateInput.type = "date";
         dateInput.id = `dateDed_${index}`;
-        card.appendChild(dateInput);
+        dateWrapper.appendChild(dateInput);
+
+        // Calendar button
+        const calendarBtn = document.createElement("button");
+        calendarBtn.type = "button";
+        calendarBtn.className = "calendar-btn";
+        calendarBtn.textContent = "📅";
+        calendarBtn.addEventListener("click", () => dateInput.showPicker());
+        dateWrapper.appendChild(calendarBtn);
+
+        // Add wrapper to card
+        card.appendChild(dateWrapper);
+
 
         // Vendor
         const vendorLabel = document.createElement("label");
@@ -964,6 +1007,15 @@
         statusEl.textContent = result.message;
         statusEl.className = result.status === "ok" ? "status-ok" : "status-error";
 
+        // 🔥 AUTO‑RELOAD ONLY FOR SINGLE-FILE UPLOADS
+        if (result.status === "ok" && selectedFilesDed.length === 1) {
+          localStorage.setItem("returnToDeductible", "1");
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
+
+
       } catch (err) {
         console.error("Upload error:", err);
         const statusEl = document.getElementById("statusDed_" + index);
@@ -976,9 +1028,17 @@
       for (let i = 0; i < selectedFilesDed.length; i++) {
         await uploadSingleDed(i);
       }
+
       const status = document.getElementById("statusDed");
       status.textContent = "All files uploaded!";
       status.className = "status-ok";
+
+      // 🔥 AUTO‑RELOAD ON SUCCESS
+      localStorage.setItem("returnToDeductible", "1");
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     }
 
     // ---------- DRAG & DROP: INCOME ----------
@@ -1039,7 +1099,6 @@
       }
     });
 
-    document.getElementById("prepareBtnDed").addEventListener("click", generateCardsDed);
     document.getElementById("uploadAllBtnDed").addEventListener("click", uploadAllDed);
 
     document.addEventListener("click", function (e) {
@@ -1196,6 +1255,31 @@
       }
     }
 
+    // ⭐ SAFE AUTO-UPPERCASE LISTENER
+    ["currencyNon", "currencyDed", "incomeCurrency"].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;   // ← prevents fatal crash on index page
+      el.addEventListener("input", function () {
+        this.value = this.value
+          .toUpperCase()
+          .replace(/[^A-Z]/g, "")
+          .slice(0, 3);
+      });
+    });
+
+    [
+      ["calendarBtnNon", "dateNon"],
+      ["calendarBtnDed", "dateDed"],
+      ["calendarBtnIncome", "incomeDate"]
+    ].forEach(([btnId, inputId]) => {
+      const btn = document.getElementById(btnId);
+      const input = document.getElementById(inputId);
+
+      if (btn && input && input.showPicker) {
+        btn.addEventListener("click", () => input.showPicker());
+      }
+    });
+
     document.getElementById("submitBtnNon").addEventListener("click", async () => {
       const statusEl = document.getElementById("statusNon");
       statusEl.textContent = "";
@@ -1289,6 +1373,12 @@
         statusEl.textContent = result.message || "Done.";
         statusEl.className = result.status === "ok" ? "status-ok" : "status-error";
 
+        // 🔥 AUTO‑RELOAD ON SUCCESS
+        if (result.status === "ok") {
+          localStorage.setItem("returnToNonDeductible", "1");
+          setTimeout(() => window.location.reload(), 500);
+        }
+
       } catch (err) {
         console.error("Upload error:", err);
         showError("Upload failed.");
@@ -1377,8 +1467,20 @@
         });
 
         const result = await res.json();
+
         statusEl.textContent = result.message || "Done.";
         statusEl.className = result.status === "ok" ? "status-ok" : "status-error";
+
+        // ---------- AUTO-RELOAD ON SUCCESS ----------
+        if (result.status === "ok") {
+          // Tell the app to return to the Income screen after reload
+          localStorage.setItem("returnToIncome", "1");
+
+          // Give the green message a moment to show, then reload
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
 
       } catch (err) {
         console.error("Upload error:", err);
@@ -1395,6 +1497,71 @@
     initTheme();
     loadLists();
     showScreen("landing");
+
+    // 🔥 AUTO‑RETURN TO INCOME AFTER RELOAD
+    if (localStorage.getItem("returnToIncome") === "1") {
+      localStorage.removeItem("returnToIncome");
+      showScreen("income"); // your income screen ID is "income"
+    }
+
+    // Clear Income fields after auto-return
+    if (localStorage.getItem("returnToIncome") === "1") {
+      document.getElementById("incomeDate").value = "";
+      document.getElementById("incomeBusinessType").value = "";
+      document.getElementById("incomeContractor").value = "";
+      document.getElementById("incomeCurrency").value = "";
+      document.getElementById("incomeGross").value = "";
+      document.getElementById("incomeNet").value = "";
+      document.getElementById("incomeCategory").value = "";
+      document.getElementById("incomeGig").value = "";
+      document.getElementById("incomeDescription").value = "";
+      document.getElementById("fileNameIncome").textContent = "";
+      currentFileIncome = null;
+    }
+
+    // 🔥 AUTO‑RETURN TO DEDUCTIBLE AFTER RELOAD
+    if (localStorage.getItem("returnToDeductible") === "1") {
+      localStorage.removeItem("returnToDeductible");
+      showScreen("deductible");
+
+      // CLEAR DEDUCTIBLE FIELDS
+      document.getElementById("categoryDed").value = "";
+      document.getElementById("gigDed").value = "";
+      document.getElementById("statusDed").textContent = "";
+      document.getElementById("statusDed").className = "";
+
+      // Clear file cards
+      const container = document.getElementById("fileCardsDed");
+      if (container) container.innerHTML = "";
+
+      // Reset internal state
+      selectedFilesDed = [];
+    }
+
+    // 🔥 AUTO‑RETURN TO NON‑DEDUCTIBLE AFTER RELOAD
+    if (localStorage.getItem("returnToNonDeductible") === "1") {
+      localStorage.removeItem("returnToNonDeductible");
+      showScreen("nonDeductible");
+
+      // CLEAR NON‑DEDUCTIBLE FIELDS
+      document.getElementById("dateNon").value = "";
+      document.getElementById("vendorNon").value = "";
+      document.getElementById("currencyNon").value = "";
+      document.getElementById("totalNon").value = "";
+      document.getElementById("descriptionNon").value = "";
+
+      // Clear splits
+      const tbody = document.getElementById("splitsBodyNon");
+      if (tbody) tbody.innerHTML = "";
+
+      // Clear file
+      document.getElementById("fileNameNon").textContent = "";
+      currentFileNon = null;
+
+      // Clear status
+      document.getElementById("statusNon").textContent = "";
+      document.getElementById("statusNon").className = "";
+    }
   </script>
 </body>
 
